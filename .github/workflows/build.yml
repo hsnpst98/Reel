@@ -1,0 +1,27 @@
+name: Build IPA
+on: workflow_dispatch
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Logo olustur
+        run: |
+          python3 -m venv .venv
+          .venv/bin/pip install pillow
+          .venv/bin/python make_icon.py
+      - run: brew install xcodegen
+      - run: xcodegen generate
+      - run: pod install
+      - run: |
+          xcodebuild -workspace Reel.xcworkspace -scheme Reel \
+            -configuration Release -sdk iphoneos -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" build
+      - run: |
+          mkdir Payload
+          cp -R build/Build/Products/Release-iphoneos/Reel.app Payload/
+          zip -qr Reel.ipa Payload
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Reel-ipa
+          path: Reel.ipa
